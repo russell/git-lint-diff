@@ -1,6 +1,6 @@
 from distutils.core import setup
 
-setup(name='flake8-diff',
+setup(name='git-lint-diff',
       version='1.0',
       description='Run flake8 against only changed lines.',
       author='Russell Sim',
