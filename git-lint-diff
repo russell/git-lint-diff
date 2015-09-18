@@ -33,7 +33,7 @@ import subprocess
 import logging
 from functools import wraps
 
-log = logging.getLogger(__file__)
+LOG = logging.getLogger(__file__)
 
 line_matchers = {
     'flake8': re.compile(r'^([^\s]+):([\d]+):[\d]+: '),
@@ -93,20 +93,23 @@ def git_diff_linenumbers(filename, revision=None):
     difftool_command = ["difftool", "-y", "-x", diff_command]
 
     def _call(*args):
+        arguments = [GIT] + difftool_command + list(args) + ["--", filename]
+        LOG.debug("Diffing file: %s", ' '.join(arguments))
         try:
-            lines_output = subprocess.check_output(
-                [GIT] + difftool_command + list(args) + ["--", filename])
+            lines_output = subprocess.check_output(arguments)
         except subprocess.CalledProcessError:
             lines_output = ""
         return lines_output
 
     if revision:
         lines_output = _call(revision)
+        LOG.debug(lines_output)
         return lines_output.split()
     else:
         lines_output = _call()
         # Check any files that are in the cache
         lines_output1 = _call("--cached")
+        LOG.debug(lines_output + lines_output1)
         return lines_output.split() + lines_output1.split()
 
 
@@ -117,7 +120,7 @@ def lint(args):
     (output, err) = proc.communicate()
     status = proc.wait()
     if status != 0 and len(output) == 0:
-        log.exception()
+        LOG.exception()
     return output
 
 
@@ -181,11 +184,11 @@ def check_files(executable, line_match, revision=None,
 
         if not all(map(lambda x: x.match(filename),
                        WHITE_LIST)):
-            log.info('SKIPPING %s' % filename)
+            LOG.info('SKIPPING %s' % filename)
             continue
         if any(map(lambda x: x.match(filename),
                    BLACK_LIST)):
-            log.info('SKIPPING %s' % filename)
+            LOG.info('SKIPPING %s' % filename)
             continue
         included_lines = changed_lines(filename, revision)
 
