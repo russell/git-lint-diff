@@ -35,14 +35,31 @@ from functools import wraps
 
 LOG = logging.getLogger(__file__)
 
+
+class FlakeShowSource(object):
+
+    _re = re.compile(r'^([^\s]+):([\d]+):[\d]+: ')
+    _match = False
+    count = 0
+
+    def match(self, line):
+        match = self._re.match(line)
+        if match:
+            self._match = match
+        self.count += 1
+        return self._match
+
+
 line_matchers = {
     'flake8': re.compile(r'^([^\s]+):([\d]+):[\d]+: '),
+    'flake8-show-source': FlakeShowSource(),
     'puppet-lint': re.compile(r'^([^\s]+) - .* ([\d]+)$'),
     'jshint': re.compile(r'^([^\s]+): line ([\d]+),.*$'),
 }
 
 executables = {
     'flake8': 'flake8',
+    'flake8-show-source': 'flake8',
     'puppet-lint': 'puppet-lint',
     'jshint': 'jshint',
 }
