@@ -50,11 +50,27 @@ class FlakeShowSource(object):
         return self._match
 
 
+class MultipleRegexs(object):
+
+    _regexs = []
+
+    def __init__(self, regexs):
+        self._regexs = regexs
+
+    def match(self, line):
+        for _re in self._regexs:
+            match = _re.match(line)
+            if match:
+                return match
+
+
 line_matchers = {
     'flake8': re.compile(r'^([^\s]+):([\d]+):[\d]+: '),
     'flake8-show-source': FlakeShowSource(),
     'puppet-lint': re.compile(r'^([^\s]+) - .* ([\d]+)$'),
     'jshint': re.compile(r'^([^\s]+): line ([\d]+),.*$'),
+    'checkstyle': MultipleRegexs([re.compile(r'^([^\s]+):([\d]+):[\d]+: '),
+                                  re.compile(r'^([^\s]+):([\d]+): ')]),
 }
 
 executables = {
@@ -62,6 +78,7 @@ executables = {
     'flake8-show-source': 'flake8',
     'puppet-lint': 'puppet-lint',
     'jshint': 'jshint',
+    'checkstyle': 'mvn',
 }
 
 
@@ -111,7 +128,7 @@ def git_diff_linenumbers(filename, revision=None):
 
     def _call(*args):
         arguments = [GIT] + difftool_command + list(args) + ["--", filename]
-        LOG.debug("Diffing file: %s", ' '.join(arguments))
+        LOG.debug("Diffing file: %r", ' '.join(arguments))
         try:
             lines_output = subprocess.check_output(arguments)
         except subprocess.CalledProcessError:
@@ -132,8 +149,7 @@ def git_diff_linenumbers(filename, revision=None):
 
 def lint(args):
     """Run lint checker over a file and return the output"""
-    proc = subprocess.Popen(args,
-                            stdout=subprocess.PIPE)
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
     (output, err) = proc.communicate()
     status = proc.wait()
     if status != 0 and len(output) == 0:
